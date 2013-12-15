@@ -6,6 +6,7 @@ import json
 import pymongo
 from bson.objectid import ObjectId
 import md5
+import datetime
 from bson.json_util import dumps
 from flask.ext.pymongo import PyMongo
 from flask.ext.cors import origin
@@ -53,7 +54,7 @@ def add_lab_user():
 
 @app.route('/lab-dashboard', methods=['GET', 'POST'])
 def lab_dashboard():
-
+    print request
     if request.method == 'GET':
 
         #Check if user is in the session by checking for this key
@@ -96,8 +97,76 @@ def lab_dashboard():
                 recent_thirty_reports = recent_thirty_reports
                 )    
     elif request.method == 'POST':
+<<<<<<< HEAD
             #CODE HERE FOR HANDLING FORM INPUT
         print 'POST'
+=======
+    
+        #print request.form
+        
+        
+		logged_in_user = session['email']
+		user = mongo.db.lab_users.find_one({'email':logged_in_user['email']})
+	
+		f_name = request.form['farm_list']
+		f_info = mongo.db.users.find_one({'farm_name':f_name})
+		f_id = f_info['_id']
+		l_id = user['_id']
+		
+		
+		new_report = dict(
+			BMCC = request.form['ibmcc'],
+			#new Date().toISOString()
+			Date = (datetime.datetime.now()),
+			Milkfat = request.form['fat'],
+			Pickup_Time = request.form['time'],
+			Temp = request.form['tempp'],
+			Test_Date = request.form['test_date'],
+			Total_Plate_Count =  request.form['pcount'],
+			True_Protein = request.form['prtn'],
+			Volume = request.form['vol'],
+			farmer_user = ObjectId(f_id),
+			lab_user = ObjectId(l_id)	
+		)
+			
+			
+		print new_report
+            
+      
+		mongo.db.milkdata.insert(new_report)
+		   #Section for handling the 30 most recent reports
+		recent_thirty_reports= mongo.db.milkdata.find(\
+                {'lab_user':user['_id']})\
+                .sort('Date',-1).limit(30)
+
+            #Convert cursor into a list
+		recent_thirty_reports= [x for x in recent_thirty_reports]  
+
+            #Get a set of all the farmer ids in recent reports so we can get farmer data
+		farmer_objectsids = {
+                ObjectId(x['farmer_user']) for x in recent_thirty_reports
+            }
+
+            #Go through each farmer_id in the set, get the userdata for that farmer and 
+            # swap out the id in 'farmer_user' with a dictionary of user data
+		for farmer_id in farmer_objectsids:
+                
+			f = mongo.db.users.find_one({"_id":farmer_id})
+                #Maybe an incorrect farmer_id?
+                if f:
+                    #Go through all the reports and swap out ObjectId for actual farmer data
+                    # This is basically a table join in MongoDB
+                    for r in recent_thirty_reports:
+                        if r['farmer_user'] == farmer_id:
+                            r['farmer_user'] = f
+
+		return render_template('dashboard.html', 
+                user=logged_in_user, 
+                recent_thirty_reports= recent_thirty_reports
+                )    
+         
+
+>>>>>>> Data Insertion Done!!!
     else:
         return redirect(url_for('index'))
     
@@ -128,8 +197,7 @@ def lab_login():
             
             user = mongo.db.lab_users.find_one(
                     {'email': request.form['email']} )
-            
-
+                            
             #If user didn't return as 'None' and if password matches
             try_pw = md5.md5(request.form['pw']+request.form['email']).hexdigest()
 
@@ -155,7 +223,7 @@ def login():
 
     
 
-    res = make_response(dumps({ 'user':'Daniel', 'farmer_id':1 }))
+    res = make_response(dumps({ 'user':'Daniel', 'farmer_id':1}))
     res.headers['Access-Control-Allow-Origin'] = '*'
     res.headers['Content-Type'] = 'application/json'
     return res
