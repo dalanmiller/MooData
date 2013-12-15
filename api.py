@@ -100,11 +100,7 @@ def lab_dashboard():
                 recent_thirty_reports = recent_thirty_reports
                 )    
     elif request.method == 'POST':
-<<<<<<< HEAD
-            #CODE HERE FOR HANDLING FORM INPUT
-        print 'POST'
-=======
-    
+             
         #print request.form
         
         
@@ -169,7 +165,6 @@ def lab_dashboard():
                 )    
          
 
->>>>>>> Data Insertion Done!!!
     else:
         return redirect(url_for('index'))
     
